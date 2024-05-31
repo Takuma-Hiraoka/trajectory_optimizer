@@ -9,7 +9,8 @@ namespace trajectory_optimizer{
   public:
     int debugLevel = 0; // 0: no debug message. 1: time measure. 2: internal state
     int maxIteration = 100;
-    double convergeThre = 1e1;
+    int minIteration = 10;
+    double convergeThre = 1e-5;
     prioritized_inverse_kinematics_solver2::IKParam pikParam;
 
     TOParam(){

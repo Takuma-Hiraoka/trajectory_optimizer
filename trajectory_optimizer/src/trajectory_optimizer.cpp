@@ -158,7 +158,8 @@ namespace trajectory_optimizer{
       if(param.debugLevel > 1) {
         std::cerr << "[TrajectoryOptimizer] solveTO loop: " << loop << " distance: " << distance << std::endl;
       }
-      if (std::abs(distance - prevDistance) <= param.convergeThre) break;
+      if ( loop > param.minIteration &&
+           std::abs(distance - prevDistance) <= param.convergeThre) break;
       prevDistance = distance;
     }
     if(param.debugLevel > 0) {
