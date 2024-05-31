@@ -48,6 +48,7 @@ int main(void){
   std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraints{constraints0};
   std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > rejections;
   trajectory_optimizer::TOParam param;
+  param.debugLevel=2;
   std::cerr << "initial path" << std::endl;
   for (int i=0;i<path->size();i++) {
     for (int j=0;j<(*path)[i].size();j++) std::cerr << (*path)[i][j] << " ";

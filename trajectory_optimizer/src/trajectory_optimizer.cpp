@@ -1,4 +1,5 @@
 #include <trajectory_optimizer/trajectory_optimizer.h>
+#include <cnoid/TimeMeasure>
 
 namespace trajectory_optimizer{
 
@@ -98,6 +99,10 @@ namespace trajectory_optimizer{
       }
     } // copy
 
+    cnoid::TimeMeasure timer;
+    if(param.debugLevel>0) timer.begin();
+
+    double prevDistance = 1e10;
     int loop;
     for (loop=0; loop < param.maxIteration; loop++){
 
@@ -142,6 +147,23 @@ namespace trajectory_optimizer{
       }// add trajectory constraint
 
       bool solved = solveTOOnce(variabless, constraintss, rejectionss, param.pikParam);
+      double distance=0;
+      for (int i=0;i<constraintss.size();i++){
+        for (int j=0;j<constraintss[i].size();j++){
+          for (int k=0;k<constraintss[i][j].size();k++){
+            distance += constraintss[i][j][k]->distance();
+          }
+        }
+      }
+      if(param.debugLevel > 1) {
+        std::cerr << "[TrajectoryOptimizer] solveTO loop: " << loop << " distance: " << distance << std::endl;
+      }
+      if (std::abs(distance - prevDistance) <= param.convergeThre) break;
+      prevDistance = distance;
+    }
+    if(param.debugLevel > 0) {
+      double time = timer.measure();
+      std::cerr << "[TrajectoryOptimizer] solveTO loop: " << loop << " time: " << time << "[s]." << std::endl;
     }
     for (int i=0; i<path->size();i++) {
       link2Frame(variabless[i], (*path)[i]);
