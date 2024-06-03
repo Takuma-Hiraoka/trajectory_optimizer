@@ -93,11 +93,11 @@ namespace trajectory_optimizer{
     }
   }
   
-  bool solveTO(const std::vector<cnoid::LinkPtr>& variables,
-               const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints,
-               const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections,
-               const TOParam& param,
-               std::shared_ptr<std::vector<std::vector<double> > > path){
+  bool solveTOParallel(const std::vector<cnoid::LinkPtr>& variables,
+		       const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints,
+		       const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections,
+		       const TOParam& param,
+		       std::shared_ptr<std::vector<std::vector<double> > > path){
     // copy
     std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps;
     std::vector<std::vector<cnoid::LinkPtr> > variabless;
@@ -227,6 +227,48 @@ namespace trajectory_optimizer{
     if(param.debugLevel > 0) {
       double time = timer.measure();
       std::cerr << "[TrajectoryOptimizer] solveTO loop: " << loop << " time: " << time << "[s]." << std::endl;
+    }
+    return true;
+  }
+
+  bool solveTO(const std::vector<cnoid::LinkPtr>& variables,
+	       const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints,
+	       const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections,
+	       const TOParam& param,
+	       std::shared_ptr<std::vector<std::vector<double> > > path){
+    // copy
+    std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps;
+    std::vector<cnoid::LinkPtr> variabless;
+    std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraintss;
+    constraintss.resize(constraints.size());
+    std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > rejectionss;
+    for (int i=0; i< path->size(); i++){
+      std::set<cnoid::BodyPtr> bodies = getBodies(variables);
+      std::map<cnoid::BodyPtr, cnoid::BodyPtr> modelMap;
+      for(std::set<cnoid::BodyPtr>::iterator it = bodies.begin(); it != bodies.end(); it++){
+        modelMap[*it] = (*it)->clone();
+      }
+      modelMaps.push_back(modelMap); // cloneしたbodyがデストラクトされないように、保管しておく
+      for(int v=0;v<variables.size();v++){
+        variabless.push_back(modelMap[variables[v]->body()]->link(variables[v]->index()));
+      }
+      frame2Link((*path)[i],std::vector<cnoid::LinkPtr>(variabless.begin() + i * variables.size(), variabless.begin() + (i+1) * variables.size()));
+      for(int j=0;j<constraints.size();j++){ //優先度
+        for(int k=0;k<constraints[j].size();k++){
+          constraintss[j].push_back(constraints[j][k]->clone(modelMap));
+        }
+      }
+      for(int j=0;j<rejections.size();j++){
+        rejectionss.push_back(rejections[j]->clone(modelMap));
+      }
+    } // copy
+
+    cnoid::TimeMeasure timer;
+    if(param.debugLevel>0) timer.begin();
+
+    if(param.debugLevel > 0) {
+      double time = timer.measure();
+      std::cerr << "[TrajectoryOptimizer] solveTO time: " << time << "[s]." << std::endl;
     }
     return true;
   }

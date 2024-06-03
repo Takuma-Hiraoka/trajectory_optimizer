@@ -35,7 +35,11 @@ namespace trajectory_optimizer{
 		     const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints,
 		     const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& rejections,
 		     prioritized_inverse_kinematics_solver2::IKParam pikParam);
-
+  bool solveTOParallel(const std::vector<cnoid::LinkPtr>& variables,
+		       const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints,
+		       const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections,
+		       const TOParam& param = TOParam(),
+		       std::shared_ptr<std::vector<std::vector<double> > > path = nullptr);
   bool solveTO(const std::vector<cnoid::LinkPtr>& variables,
                const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints,
                const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections,
