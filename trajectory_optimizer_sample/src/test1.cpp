@@ -28,6 +28,21 @@ int main(void){
   path->push_back(init_q);
   path->push_back(init_q);
   path->push_back(init_q);
+  path->push_back(init_q);
+  path->push_back(init_q);
+  path->push_back(init_q);
+  path->push_back(init_q);
+  path->push_back(init_q);
+  path->push_back(init_q);
+  path->push_back(init_q);
+  path->push_back(end_q);
+  path->push_back(end_q);
+  path->push_back(end_q);
+  path->push_back(end_q);
+  path->push_back(end_q);
+  path->push_back(end_q);
+  path->push_back(end_q);
+  path->push_back(end_q);
   path->push_back(end_q);
   path->push_back(end_q);
 
@@ -48,6 +63,7 @@ int main(void){
   std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraints{constraints0};
   std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > rejections;
   trajectory_optimizer::TOParam param;
+  param.threads=5;
   param.debugLevel=2;
   param.pikParam.debugLevel=0;
   std::cerr << "initial path" << std::endl;
