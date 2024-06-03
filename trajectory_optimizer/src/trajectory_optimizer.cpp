@@ -102,7 +102,7 @@ namespace trajectory_optimizer{
     cnoid::TimeMeasure timer;
     if(param.debugLevel>0) timer.begin();
 
-    double prevDistance = 1e10;
+    std::vector<std::vector<double> > prevPath;
     int loop;
     for (loop=0; loop < param.maxIteration; loop++){
 
@@ -147,27 +147,40 @@ namespace trajectory_optimizer{
       }// add trajectory constraint
 
       bool solved = solveTOOnce(variabless, constraintss, rejectionss, param.pikParam);
+      prevPath= (*path);
+
+      // 収束判定
       double distance=0;
-      for (int i=0;i<constraintss.size();i++){
-        for (int j=0;j<constraintss[i].size();j++){
-          for (int k=0;k<constraintss[i][j].size();k++){
-            distance += constraintss[i][j][k]->distance();
-          }
-        }
+      for(int i=0;i<path->size();i++){
+        link2Frame(variabless[i], (*path)[i]); // 更新
+	int idx = 0;
+	for(int v=0;v<variabless[i].size();v++){
+	  if(variabless[i][v]->isRevoluteJoint() || variabless[i][v]->isPrismaticJoint()) {
+	    distance += std::abs(prevPath[i][idx] - (*path)[i][idx]);
+	    idx++;
+	  } else if(variabless[i][v]->isFreeJoint()) {
+	    distance += std::abs(prevPath[i][idx+0] - (*path)[i][idx+0]);
+	    distance += std::abs(prevPath[i][idx+1] - (*path)[i][idx+1]);
+	    distance += std::abs(prevPath[i][idx+2] - (*path)[i][idx+2]);
+	    cnoid::Quaternion prevQ(prevPath[i][idx+6], prevPath[i][idx+3], prevPath[i][idx+4], prevPath[i][idx+5]);
+	    cnoid::Quaternion q((*path)[i][idx+6], (*path)[i][idx+3], (*path)[i][idx+4], (*path)[i][idx+5]);
+	    cnoid::Matrix3 prevR = prevQ.toRotationMatrix();
+	    cnoid::Matrix3 R = q.toRotationMatrix();
+	    cnoid::AngleAxis angleAxis = cnoid::AngleAxis(R * prevR.transpose());
+	    distance += (angleAxis.angle()*angleAxis.axis()).sum();
+	    idx+=7;
+	  }
+	}
       }
+
       if(param.debugLevel > 1) {
         std::cerr << "[TrajectoryOptimizer] solveTO loop: " << loop << " distance: " << distance << std::endl;
       }
-      if ( loop > param.minIteration &&
-           std::abs(distance - prevDistance) <= param.convergeThre) break;
-      prevDistance = distance;
+      if ( distance <= param.convergeThre) break;
     }
     if(param.debugLevel > 0) {
       double time = timer.measure();
       std::cerr << "[TrajectoryOptimizer] solveTO loop: " << loop << " time: " << time << "[s]." << std::endl;
-    }
-    for (int i=0; i<path->size();i++) {
-      link2Frame(variabless[i], (*path)[i]);
     }
     return true;
   }

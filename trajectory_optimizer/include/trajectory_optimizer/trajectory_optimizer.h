@@ -9,17 +9,16 @@ namespace trajectory_optimizer{
   public:
     int debugLevel = 0; // 0: no debug message. 1: time measure. 2: internal state
     int maxIteration = 100;
-    int minIteration = 10;
-    double convergeThre = 1e-5;
+    double convergeThre = 1e-2;
     prioritized_inverse_kinematics_solver2::IKParam pikParam;
 
     TOParam(){
       pikParam.we = 1e2;
       pikParam.maxIteration = 10;
-      pikParam.minIteration = 10;
+      pikParam.minIteration = 1;
       pikParam.checkFinalState = true;
       pikParam.calcVelocity = false;
-      pikParam.convergeThre = 2.5e-2;
+      pikParam.convergeThre = 2.5e-1;
     }
   };
   bool solveTOOnce(const std::vector<std::vector<cnoid::LinkPtr> >& variables,
