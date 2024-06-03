@@ -64,18 +64,33 @@ namespace trajectory_optimizer{
   }
 
 
-  void solveTOThread(const std::vector<cnoid::LinkPtr>& variables,
-		     const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints,
-		     const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections,
-		     const prioritized_inverse_kinematics_solver2::IKParam pikParam) {
-    std::vector<std::shared_ptr<prioritized_qp_base::Task> > tasks;
-    std::shared_ptr<std::vector<std::vector<double> > > path;
-    bool solved = prioritized_inverse_kinematics_solver2::solveIKLoop(variables,
-								      constraints,
-								      rejections,
-								      tasks,
-								      pikParam,
-								      path);
+  void solveTOThread(std::shared_ptr<unsigned int> count,
+		     std::shared_ptr<std::mutex> mutex,
+		     const std::vector<std::vector<cnoid::LinkPtr> >& variables,
+		     const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints,
+		     const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& rejections,
+		     prioritized_inverse_kinematics_solver2::IKParam pikParam) {
+    while (true) {
+      mutex->lock();
+      if ((*count) >= variables.size()) {
+	mutex->unlock();
+	return;
+      } else {
+	std::vector<cnoid::LinkPtr> variable = variables[*count];
+	std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraint = constraints[*count];
+	std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > rejection = rejections[*count];
+	(*count)++;
+	mutex->unlock();
+	std::vector<std::shared_ptr<prioritized_qp_base::Task> > tasks;
+	std::shared_ptr<std::vector<std::vector<double> > > path;
+	bool solved =  prioritized_inverse_kinematics_solver2::solveIKLoop(variable,
+									   constraint,
+									   rejection,
+									   tasks,
+									   pikParam,
+									   path);
+      }
+    }
   }
   
   bool solveTO(const std::vector<cnoid::LinkPtr>& variables,
@@ -164,24 +179,16 @@ namespace trajectory_optimizer{
       int numThreads = (param.threads > path->size()) ? path->size() : param.threads;
 
       if (numThreads > 1) {
-	int count = 0;
+	std::shared_ptr<unsigned int> count = std::make_shared<unsigned int>(0);
 	std::vector<std::thread *> th(numThreads);
 	for (unsigned int i=0; i < numThreads; i++) {
-	  th[i] = new std::thread([i, &variabless, &constraintss, &rejectionss, &param]
-				  { return solveTOThread(variabless[i], constraintss[i], rejectionss[i], param.pikParam);
+	  th[i] = new std::thread([&count, &variabless, &constraintss, &rejectionss, &param]
+				  { return solveTOThread(count, param.threadLock, variabless, constraintss, rejectionss, param.pikParam);
 				  });
-	  count++;
 	}
-	while (count < path->size()) {
-	  for (unsigned int i=0; i < numThreads; i++) {
-	    th[i]->join();
-	    delete th[i];
-	    th[i] = new std::thread([count, &variabless, &constraintss, &rejectionss, &param]
-				    { return solveTOThread(variabless[count], constraintss[count], rejectionss[count], param.pikParam);
-				    });
-	    count++;
-	    if (count >= path->size()) break;
-	  }
+	for (unsigned int i=0; i < numThreads; i++) {
+	  th[i]->join();
+	  delete th[i];
 	}
       } else {
 	bool solved = solveTOOnce(variabless, constraintss, rejectionss, param.pikParam);

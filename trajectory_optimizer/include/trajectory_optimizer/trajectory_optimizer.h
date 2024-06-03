@@ -14,7 +14,7 @@ namespace trajectory_optimizer{
     double convergeThre = 1e-2;
     prioritized_inverse_kinematics_solver2::IKParam pikParam;
     unsigned int threads = 1;
-    std::mutex threadLock;
+    std::shared_ptr<std::mutex> threadLock = std::make_shared<std::mutex>();
 
     TOParam(){
       pikParam.we = 1e2;
@@ -29,7 +29,9 @@ namespace trajectory_optimizer{
                    const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints,
                    const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& rejections,
                    prioritized_inverse_kinematics_solver2::IKParam pikParam);
-  void solveTOThread(const std::vector<std::vector<cnoid::LinkPtr> >& variables,
+  void solveTOThread(std::shared_ptr<unsigned int> count,
+		     std::shared_ptr<std::mutex> mutex,
+		     const std::vector<std::vector<cnoid::LinkPtr> >& variables,
 		     const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints,
 		     const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& rejections,
 		     prioritized_inverse_kinematics_solver2::IKParam pikParam);
