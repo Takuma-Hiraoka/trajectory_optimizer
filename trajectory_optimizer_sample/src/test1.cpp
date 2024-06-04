@@ -24,26 +24,8 @@ int main(void){
   end_q[5] = 0;
   end_q[6] = 1;
   std::shared_ptr<std::vector<std::vector<double> > > path = std::make_shared<std::vector<std::vector<double> > >();
-  path->push_back(init_q);
-  path->push_back(init_q);
-  path->push_back(init_q);
-  path->push_back(init_q);
-  path->push_back(init_q);
-  path->push_back(init_q);
-  path->push_back(init_q);
-  path->push_back(init_q);
-  path->push_back(init_q);
-  path->push_back(init_q);
-  path->push_back(end_q);
-  path->push_back(end_q);
-  path->push_back(end_q);
-  path->push_back(end_q);
-  path->push_back(end_q);
-  path->push_back(end_q);
-  path->push_back(end_q);
-  path->push_back(end_q);
-  path->push_back(end_q);
-  path->push_back(end_q);
+  for (int i=0;i<10;i++) path->push_back(init_q);
+  for (int i=0;i<10;i++) path->push_back(end_q);
 
   std::vector<cnoid::LinkPtr> variables;
   variables.push_back(robot->rootLink());
@@ -60,11 +42,12 @@ int main(void){
     constraints0.push_back(constraint);
   }
   std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraints{constraints0};
-  std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > rejections;
   trajectory_optimizer::TOParam param;
   param.threads=10;
-  param.debugLevel=1;
+  param.debugLevel=2;
   param.convergeThre=1e-4;
+  param.shortcut=false;
+  param.shortcutThre=1e-2;
   param.pikParam.debugLevel=0;
   param.pikParam.convergeThre=1e-4;
   std::cerr << "initial path" << std::endl;
@@ -74,7 +57,6 @@ int main(void){
   }
   bool solved = trajectory_optimizer::solveTO(variables,
                                               constraints,
-                                              rejections,
                                               param,
                                               path);
   std::cerr << "solved: " << solved << std::endl;
