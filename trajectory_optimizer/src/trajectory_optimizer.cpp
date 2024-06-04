@@ -17,12 +17,12 @@ namespace trajectory_optimizer{
       if(links[l]->isRevoluteJoint() || links[l]->isPrismaticJoint()) {
         frame.push_back(links[l]->q());
       }else if(links[l]->isFreeJoint()) {
-	frame.push_back(links[l]->p()[0]);
+        frame.push_back(links[l]->p()[0]);
         frame.push_back(links[l]->p()[1]);
         frame.push_back(links[l]->p()[2]);
         cnoid::Quaternion q(links[l]->R());
         frame.push_back(q.x());
-	frame.push_back(q.y());
+        frame.push_back(q.y());
         frame.push_back(q.z());
         frame.push_back(q.w());
       }
@@ -65,39 +65,40 @@ namespace trajectory_optimizer{
 
 
   void solveTOThread(std::shared_ptr<unsigned int> count,
-		     std::shared_ptr<std::mutex> mutex,
-		     const std::vector<std::vector<cnoid::LinkPtr> >& variables,
-		     const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints,
-		     const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& rejections,
-		     prioritized_inverse_kinematics_solver2::IKParam pikParam) {
+                     std::shared_ptr<std::mutex> mutex,
+                     const std::vector<std::vector<cnoid::LinkPtr> >& variables,
+                     const std::vector<std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > >& constraints,
+                     const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& rejections,
+                     prioritized_inverse_kinematics_solver2::IKParam pikParam) {
     while (true) {
       mutex->lock();
       if ((*count) >= variables.size()) {
-	mutex->unlock();
-	return;
+        mutex->unlock();
+        return;
       } else {
-	std::vector<cnoid::LinkPtr> variable = variables[*count];
-	std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraint = constraints[*count];
-	std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > rejection = rejections[*count];
-	(*count)++;
-	mutex->unlock();
-	std::vector<std::shared_ptr<prioritized_qp_base::Task> > tasks;
-	std::shared_ptr<std::vector<std::vector<double> > > path;
-	bool solved =  prioritized_inverse_kinematics_solver2::solveIKLoop(variable,
-									   constraint,
-									   rejection,
-									   tasks,
-									   pikParam,
-									   path);
+        std::vector<cnoid::LinkPtr> variable = variables[*count];
+        std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraint = constraints[*count];
+        std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > rejection = rejections[*count];
+        (*count)++;
+        mutex->unlock();
+        std::vector<std::shared_ptr<prioritized_qp_base::Task> > tasks;
+        std::shared_ptr<std::vector<std::vector<double> > > path;
+        bool solved =  prioritized_inverse_kinematics_solver2::solveIKLoop(variable,
+                                                                           constraint,
+                                                                           rejection,
+                                                                           tasks,
+                                                                           pikParam,
+                                                                           path);
       }
     }
   }
-  
+
   bool solveTOParallel(const std::vector<cnoid::LinkPtr>& variables,
-		       const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints,
-		       const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections,
-		       const TOParam& param,
-		       std::shared_ptr<std::vector<std::vector<double> > > path){
+                       const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints,
+                       const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections,
+                       const TOParam& param,
+                       std::shared_ptr<std::vector<std::vector<double> > > path){
+    if (path->size()<3) return true;
     // copy
     std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps;
     std::vector<std::vector<cnoid::LinkPtr> > variabless;
@@ -142,17 +143,17 @@ namespace trajectory_optimizer{
         trajectoryConstraints.clear(); // 前回loop時のものを取り除く
         for(int v=0;v<variabless[i].size();v++){
           if(variabless[i][v]->isRevoluteJoint() || variabless[i][v]->isPrismaticJoint()){
-            std::shared_ptr<ik_constraint2::JointAngleConstraint> forwardConstraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
-            forwardConstraint->joint() = variabless[i][v];
-            forwardConstraint->targetq() = variabless[i-1][v]->q();
-            forwardConstraint->precision() = 1e10; // always satisfied
+            std::shared_ptr<ik_constraint2::JointTrajectoryConstraint> forwardConstraint = std::make_shared<ik_constraint2::JointTrajectoryConstraint>();
+            forwardConstraint->A_joint() = variabless[i][v];
+            forwardConstraint->B_q() = variabless[i-1][v]->q();
+            forwardConstraint->precision() = 1e-3; // never satisfied
             forwardConstraint->maxError() = 1e10;
             trajectoryConstraints.push_back(forwardConstraint);
 
-            std::shared_ptr<ik_constraint2::JointAngleConstraint> backwardConstraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
-            backwardConstraint->joint() = variabless[i][v];
-            backwardConstraint->targetq() = variabless[i+1][v]->q();
-            backwardConstraint->precision() = 1e10; // always satisfied
+            std::shared_ptr<ik_constraint2::JointTrajectoryConstraint> backwardConstraint = std::make_shared<ik_constraint2::JointTrajectoryConstraint>();
+            backwardConstraint->A_joint() = variabless[i][v];
+            backwardConstraint->B_q() = variabless[i+1][v]->q();
+            backwardConstraint->precision() = 1e-3; // never satisfied
             backwardConstraint->maxError() = 1e10;
             trajectoryConstraints.push_back(backwardConstraint);
 
@@ -160,14 +161,14 @@ namespace trajectory_optimizer{
             std::shared_ptr<ik_constraint2::PositionConstraint> forwardConstraint = std::make_shared<ik_constraint2::PositionConstraint>();
             forwardConstraint->A_link() = variabless[i][v];
             forwardConstraint->B_localpos() = variabless[i-1][v]->T();
-            forwardConstraint->precision() = 1e10; // always satisfied
+            forwardConstraint->precision() = 1e-3; // never satisfied
             forwardConstraint->maxError() << 1e10, 1e10, 1e10, 1e10, 1e10, 1e10;
             trajectoryConstraints.push_back(forwardConstraint);
 
             std::shared_ptr<ik_constraint2::PositionConstraint> backwardConstraint = std::make_shared<ik_constraint2::PositionConstraint>();
             backwardConstraint->A_link() = variabless[i][v];
             backwardConstraint->B_localpos() = variabless[i+1][v]->T();
-            backwardConstraint->precision() = 1e10; // always satisfied
+            backwardConstraint->precision() = 1e-3; // never satisfied
             backwardConstraint->maxError() << 1e10, 1e10, 1e10, 1e10, 1e10, 1e10;
             trajectoryConstraints.push_back(backwardConstraint);
           }else{
@@ -179,19 +180,20 @@ namespace trajectory_optimizer{
       int numThreads = (param.threads > path->size()) ? path->size() : param.threads;
 
       if (numThreads > 1) {
-	std::shared_ptr<unsigned int> count = std::make_shared<unsigned int>(0);
-	std::vector<std::thread *> th(numThreads);
-	for (unsigned int i=0; i < numThreads; i++) {
-	  th[i] = new std::thread([&count, &variabless, &constraintss, &rejectionss, &param]
-				  { return solveTOThread(count, param.threadLock, variabless, constraintss, rejectionss, param.pikParam);
-				  });
-	}
-	for (unsigned int i=0; i < numThreads; i++) {
-	  th[i]->join();
-	  delete th[i];
-	}
+        std::shared_ptr<unsigned int> count = std::make_shared<unsigned int>(0);
+        std::vector<std::thread *> th(numThreads);
+        std::shared_ptr<std::mutex> threadLock = std::make_shared<std::mutex>();
+        for (unsigned int i=0; i < numThreads; i++) {
+          th[i] = new std::thread([&count, &threadLock, &variabless, &constraintss, &rejectionss, &param]
+                                  { return solveTOThread(count, threadLock, variabless, constraintss, rejectionss, param.pikParam);
+                                  });
+        }
+        for (unsigned int i=0; i < numThreads; i++) {
+          th[i]->join();
+          delete th[i];
+        }
       } else {
-	bool solved = solveTOOnce(variabless, constraintss, rejectionss, param.pikParam);
+        bool solved = solveTOOnce(variabless, constraintss, rejectionss, param.pikParam);
       }
 
       // 収束判定
@@ -199,24 +201,24 @@ namespace trajectory_optimizer{
       double distance=0;
       for(int i=0;i<path->size();i++){
         link2Frame(variabless[i], (*path)[i]); // 更新
-	int idx = 0;
-	for(int v=0;v<variabless[i].size();v++){
-	  if(variabless[i][v]->isRevoluteJoint() || variabless[i][v]->isPrismaticJoint()) {
-	    distance += std::abs(prevPath[i][idx] - (*path)[i][idx]);
-	    idx++;
-	  } else if(variabless[i][v]->isFreeJoint()) {
-	    distance += std::abs(prevPath[i][idx+0] - (*path)[i][idx+0]);
-	    distance += std::abs(prevPath[i][idx+1] - (*path)[i][idx+1]);
-	    distance += std::abs(prevPath[i][idx+2] - (*path)[i][idx+2]);
-	    cnoid::Quaternion prevQ(prevPath[i][idx+6], prevPath[i][idx+3], prevPath[i][idx+4], prevPath[i][idx+5]);
-	    cnoid::Quaternion q((*path)[i][idx+6], (*path)[i][idx+3], (*path)[i][idx+4], (*path)[i][idx+5]);
-	    cnoid::Matrix3 prevR = prevQ.toRotationMatrix();
-	    cnoid::Matrix3 R = q.toRotationMatrix();
-	    cnoid::AngleAxis angleAxis = cnoid::AngleAxis(R * prevR.transpose());
-	    distance += (angleAxis.angle()*angleAxis.axis()).sum();
-	    idx+=7;
-	  }
-	}
+        int idx = 0;
+        for(int v=0;v<variabless[i].size();v++){
+          if(variabless[i][v]->isRevoluteJoint() || variabless[i][v]->isPrismaticJoint()) {
+            distance += std::abs(prevPath[i][idx] - (*path)[i][idx]);
+            idx++;
+          } else if(variabless[i][v]->isFreeJoint()) {
+            distance += std::abs(prevPath[i][idx+0] - (*path)[i][idx+0]);
+            distance += std::abs(prevPath[i][idx+1] - (*path)[i][idx+1]);
+            distance += std::abs(prevPath[i][idx+2] - (*path)[i][idx+2]);
+            cnoid::Quaternion prevQ(prevPath[i][idx+6], prevPath[i][idx+3], prevPath[i][idx+4], prevPath[i][idx+5]);
+            cnoid::Quaternion q((*path)[i][idx+6], (*path)[i][idx+3], (*path)[i][idx+4], (*path)[i][idx+5]);
+            cnoid::Matrix3 prevR = prevQ.toRotationMatrix();
+            cnoid::Matrix3 R = q.toRotationMatrix();
+            cnoid::AngleAxis angleAxis = cnoid::AngleAxis(R * prevR.transpose());
+            distance += (angleAxis.angle()*angleAxis.axis()).sum();
+            idx+=7;
+          }
+        }
       }
 
       if(param.debugLevel > 1) {
@@ -232,10 +234,11 @@ namespace trajectory_optimizer{
   }
 
   bool solveTO(const std::vector<cnoid::LinkPtr>& variables,
-	       const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints,
-	       const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections,
-	       const TOParam& param,
-	       std::shared_ptr<std::vector<std::vector<double> > > path){
+               const std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > >& constraints,
+               const std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& rejections,
+               const TOParam& param,
+               std::shared_ptr<std::vector<std::vector<double> > > path){
+    if (path->size()<3) return true;
     // copy
     std::vector<std::map<cnoid::BodyPtr, cnoid::BodyPtr> > modelMaps;
     std::vector<cnoid::LinkPtr> variabless;
@@ -262,10 +265,63 @@ namespace trajectory_optimizer{
         rejectionss.push_back(rejections[j]->clone(modelMap));
       }
     } // copy
+    constraintss.push_back(std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >(constraints.size()));
 
     cnoid::TimeMeasure timer;
     if(param.debugLevel>0) timer.begin();
 
+    std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& trajectoryConstraints = constraintss.back();
+    trajectoryConstraints.clear();
+    for (int i=0; i<path->size() -1; i++) {
+      for(int v=0;v<variables.size();v++) { //variablessの順番はvariablesと同じ
+        if(variabless[v]->isRevoluteJoint() || variabless[v]->isPrismaticJoint()){
+          std::shared_ptr<ik_constraint2::JointTrajectoryConstraint> backwardConstraint = std::make_shared<ik_constraint2::JointTrajectoryConstraint>();
+          if (i==0) {
+            backwardConstraint->A_q() = variabless[v + i*variables.size()]->q();
+          } else {
+            backwardConstraint->A_joint() = variabless[v + i*variables.size()];
+          }
+          if (i==(path->size() -2)) {
+            backwardConstraint->B_q() = variabless[v + (i+1)*variables.size()]->q();
+          } else {
+            backwardConstraint->B_joint() = variabless[v + (i+1)*variables.size()];
+          }
+          backwardConstraint->precision() = 1e-3; // never satisfied
+          backwardConstraint->maxError() = 1e10;
+          trajectoryConstraints.push_back(backwardConstraint);
+
+        }else if(variabless[v]->isFreeJoint()) {
+          std::shared_ptr<ik_constraint2::PositionConstraint> backwardConstraint = std::make_shared<ik_constraint2::PositionConstraint>();
+          if (i==0) {
+            backwardConstraint->A_localpos() = variabless[v + i*variables.size()]->T();
+          } else {
+            backwardConstraint->A_link() = variabless[v + i*variables.size()];
+          }
+          if (i==(path->size() -2)) {
+            backwardConstraint->B_localpos() = variabless[v + (i+1)*variables.size()]->T();
+          } else {
+            backwardConstraint->B_link() = variabless[v + (i+1)*variables.size()];
+          }
+          backwardConstraint->precision() = 1e-3; // never satisfied
+          backwardConstraint->maxError() << 1e10, 1e10, 1e10, 1e10, 1e10, 1e10;
+          trajectoryConstraints.push_back(backwardConstraint);
+        }else{
+          std::cerr << "[trajectory_optimizer::solveTO] something is wrong" << std::endl;
+        }
+      }
+    }
+    // solve
+    std::vector<std::shared_ptr<prioritized_qp_base::Task> > tasks;
+    std::shared_ptr<std::vector<std::vector<double> > > pikPath;
+    bool solved = prioritized_inverse_kinematics_solver2::solveIKLoop(variabless,
+                                                                      constraintss,
+                                                                      rejectionss,
+                                                                      tasks,
+                                                                      param.pikParam,
+                                                                      pikPath);
+    for(int i=0;i<path->size();i++){
+        link2Frame(std::vector<cnoid::LinkPtr>(variabless.begin() + i * variables.size(), variabless.begin() + (i+1) * variables.size()), (*path)[i]); // 更新
+    }
     if(param.debugLevel > 0) {
       double time = timer.measure();
       std::cerr << "[TrajectoryOptimizer] solveTO time: " << time << "[s]." << std::endl;

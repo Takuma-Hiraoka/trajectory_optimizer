@@ -2,7 +2,6 @@
 #include <ik_constraint2/ik_constraint2.h>
 #include <cnoid/BodyLoader>
 #include <ros/package.h>
-#include <random>
 
 int main(void){
   // load robot
@@ -19,7 +18,7 @@ int main(void){
   init_q[4] = 0;
   init_q[5] = 0;
   init_q[6] = 1;
-  std::vector<double> end_q(robot->numJoints()+7, 1);
+  std::vector<double> end_q(robot->numJoints()+7, 0.1);
   end_q[3] = 0;
   end_q[4] = 0;
   end_q[5] = 0;
@@ -63,9 +62,11 @@ int main(void){
   std::vector<std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > > constraints{constraints0};
   std::vector<std::shared_ptr<ik_constraint2::IKConstraint> > rejections;
   trajectory_optimizer::TOParam param;
-  param.threads=5;
-  param.debugLevel=2;
+  param.threads=10;
+  param.debugLevel=1;
+  param.convergeThre=1e-4;
   param.pikParam.debugLevel=0;
+  param.pikParam.convergeThre=1e-4;
   std::cerr << "initial path" << std::endl;
   for (int i=0;i<path->size();i++) {
     for (int j=0;j<(*path)[i].size();j++) std::cerr << (*path)[i][j] << " ";

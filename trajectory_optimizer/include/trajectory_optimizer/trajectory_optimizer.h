@@ -11,10 +11,9 @@ namespace trajectory_optimizer{
   public:
     int debugLevel = 0; // 0: no debug message. 1: time measure. 2: internal state
     int maxIteration = 100;
-    double convergeThre = 1e-2;
+    double convergeThre = 1e-2; // 並列計算用.
     prioritized_inverse_kinematics_solver2::IKParam pikParam;
     unsigned int threads = 1;
-    std::shared_ptr<std::mutex> threadLock = std::make_shared<std::mutex>();
 
     TOParam(){
       pikParam.we = 1e2;
@@ -22,7 +21,7 @@ namespace trajectory_optimizer{
       pikParam.minIteration = 1;
       pikParam.checkFinalState = true;
       pikParam.calcVelocity = false;
-      pikParam.convergeThre = 2.5e-1;
+      pikParam.convergeThre = 2.5e-1; // precisionを小さく取って実質satisfiedになることはほとんどないため,一度のpikで軌道最適化するときはこの値が軌道の収束判定値
     }
   };
   bool solveTOOnce(const std::vector<std::vector<cnoid::LinkPtr> >& variables,
