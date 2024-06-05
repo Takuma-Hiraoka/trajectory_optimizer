@@ -162,7 +162,7 @@ namespace trajectory_optimizer{
       std::cerr << "[TrajectoryOptimizer] input path size : " << path->size() << std::endl;
     }
 
-    if (param.shortcut) {
+    if (param.initialShortcut) {
       std::vector<unsigned int> idxs = shortcuttableIdx(path, variables, param.shortcutThre);
       int cutNum = 0;
       for (int i=0;i<idxs.size();i++) {
@@ -344,7 +344,7 @@ namespace trajectory_optimizer{
       std::cerr << "[TrajectoryOptimizer] input path size : " << path->size() << std::endl;
     }
 
-    if (param.shortcut) {
+    if (param.initialShortcut) {
       std::vector<unsigned int> idxs = shortcuttableIdx(path, variables, param.shortcutThre);
       int cutNum = 0;
       for (int i=0;i<idxs.size();i++) {
