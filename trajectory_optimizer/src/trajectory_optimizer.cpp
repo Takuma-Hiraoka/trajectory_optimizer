@@ -217,14 +217,14 @@ namespace trajectory_optimizer{
         trajectoryConstraints.clear(); // 前回loop時のものを取り除く
         for(int v=0;v<variabless[i].size();v++){
           if(variabless[i][v]->isRevoluteJoint() || variabless[i][v]->isPrismaticJoint()){
-            std::shared_ptr<ik_constraint2::JointTrajectoryConstraint> forwardConstraint = std::make_shared<ik_constraint2::JointTrajectoryConstraint>();
+            std::shared_ptr<ik_constraint2::JointAngleConstraint> forwardConstraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
             forwardConstraint->A_joint() = variabless[i][v];
             forwardConstraint->B_q() = variabless[i-1][v]->q();
             forwardConstraint->precision() = 1e-3; // never satisfied
             forwardConstraint->maxError() = 1e10;
             trajectoryConstraints.push_back(forwardConstraint);
 
-            std::shared_ptr<ik_constraint2::JointTrajectoryConstraint> backwardConstraint = std::make_shared<ik_constraint2::JointTrajectoryConstraint>();
+            std::shared_ptr<ik_constraint2::JointAngleConstraint> backwardConstraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
             backwardConstraint->A_joint() = variabless[i][v];
             backwardConstraint->B_q() = variabless[i+1][v]->q();
             backwardConstraint->precision() = 1e-3; // never satisfied
@@ -393,7 +393,7 @@ namespace trajectory_optimizer{
       for (int i=0; i<path->size() -1; i++) {
         for(int v=0;v<variables.size();v++) { //variablessの順番はvariablesと同じ
           if(variabless[v]->isRevoluteJoint() || variabless[v]->isPrismaticJoint()){
-            std::shared_ptr<ik_constraint2::JointTrajectoryConstraint> backwardConstraint = std::make_shared<ik_constraint2::JointTrajectoryConstraint>();
+            std::shared_ptr<ik_constraint2::JointAngleConstraint> backwardConstraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
             if (i==0) {
               backwardConstraint->A_q() = variabless[v + i*variables.size()]->q();
             } else {
