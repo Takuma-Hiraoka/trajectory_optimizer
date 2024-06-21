@@ -17,6 +17,7 @@ namespace trajectory_optimizer{
     bool initialShortcut = true; //初期軌道でshortcutを行うかどうか.
     bool shortcut = false; //ほぼ変位のないstateを取り除いてstate数を減らすかどうか. trueの場合state数が変わらなくなるまで計算を続ける.
     double shortcutThre = 1e-3; // 前後のstate間で全ての自由度の変位がこの値以下である場合そのstateを取り除く.
+    int maxShortcutIter = 10; // shortcutをするときは、この回数に達するかshortcutできなくなるまで隣接stateを減らす.
 
     TOParam(){
       pikParam.we = 1e2;

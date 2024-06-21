@@ -163,14 +163,17 @@ namespace trajectory_optimizer{
     }
 
     if (param.initialShortcut) {
-      std::vector<unsigned int> idxs = shortcuttableIdx(path, variables, param.shortcutThre);
-      int cutNum = 0;
-      for (int i=0;i<idxs.size();i++) {
-        path->erase(path->begin() + idxs[i] - cutNum);
-        cutNum++;
-      }
-      if(param.debugLevel > 1) {
-        std::cerr << "[TrajectoryOptimizer] initial cut : " << idxs.size() << " states. current path size : "  << path->size() << std::endl;
+      for (int i=0; i<param.maxShortcutIter; i++) {
+        std::vector<unsigned int> idxs = shortcuttableIdx(path, variables, param.shortcutThre);
+        if (idxs.size() == 0) break;
+        int cutNum = 0;
+        for (int j=0;j<idxs.size();j++) {
+          path->erase(path->begin() + idxs[j] - cutNum);
+          cutNum++;
+        }
+        if(param.debugLevel > 1) {
+          std::cerr << "[TrajectoryOptimizer] initial cut : " << idxs.size() << " states. current path size : "  << path->size() << std::endl;
+        }
       }
     }
     // copy
@@ -345,14 +348,17 @@ namespace trajectory_optimizer{
     }
 
     if (param.initialShortcut) {
-      std::vector<unsigned int> idxs = shortcuttableIdx(path, variables, param.shortcutThre);
-      int cutNum = 0;
-      for (int i=0;i<idxs.size();i++) {
-        path->erase(path->begin() + idxs[i] - cutNum);
-        cutNum++;
-      }
-      if(param.debugLevel > 1) {
-        std::cerr << "[TrajectoryOptimizer] initial cut : " << idxs.size() << " states. current path size : "  << path->size() << std::endl;
+      for (int i=0; i<param.maxShortcutIter; i++) {
+        std::vector<unsigned int> idxs = shortcuttableIdx(path, variables, param.shortcutThre);
+        if (idxs.size() == 0) break;
+        int cutNum = 0;
+        for (int j=0;j<idxs.size();j++) {
+          path->erase(path->begin() + idxs[j] - cutNum);
+          cutNum++;
+        }
+        if(param.debugLevel > 1) {
+          std::cerr << "[TrajectoryOptimizer] initial cut : " << idxs.size() << " states. current path size : "  << path->size() << std::endl;
+        }
       }
     }
     // copy
