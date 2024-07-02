@@ -48,7 +48,7 @@ namespace trajectory_optimizer{
 
   inline std::vector<unsigned int> shortcuttableIdx(std::shared_ptr<std::vector<std::vector<double> > > path, const std::vector<cnoid::LinkPtr>& links, const double thre){
     std::vector<unsigned int> idxs;
-    for(int i=1;i<path->size()-1;i++){
+    for(int i=1;i+1<path->size();i++){
       unsigned int idx = 0;
       bool cut = true;
       for(int l=0;l<links.size();l++){
@@ -215,7 +215,7 @@ namespace trajectory_optimizer{
     for (loop=0; loop < param.maxIteration; loop++){
 
       // add trajectory constraint
-      for (int i=1; i< path->size() -1; i++){
+      for (int i=1; i+1< path->size(); i++){
         std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& trajectoryConstraints = constraintss[i].back();
         trajectoryConstraints.clear(); // 前回loop時のものを取り除く
         for(int v=0;v<variabless[i].size();v++){
@@ -396,7 +396,7 @@ namespace trajectory_optimizer{
     for (loop=0; loop < param.maxIteration; loop++) {
       std::vector<std::shared_ptr<ik_constraint2::IKConstraint> >& trajectoryConstraints = constraintss.back();
       trajectoryConstraints.clear();
-      for (int i=0; i<path->size() -1; i++) {
+      for (int i=0; i+1<path->size(); i++) {
         for(int v=0;v<variables.size();v++) { //variablessの順番はvariablesと同じ
           if(variabless[v]->isRevoluteJoint() || variabless[v]->isPrismaticJoint()){
             std::shared_ptr<ik_constraint2::JointAngleConstraint> backwardConstraint = std::make_shared<ik_constraint2::JointAngleConstraint>();
@@ -405,7 +405,7 @@ namespace trajectory_optimizer{
             } else {
               backwardConstraint->A_joint() = variabless[v + i*variables.size()];
             }
-            if (i==(path->size() -2)) {
+            if (i+2==path->size()) {
               backwardConstraint->B_q() = variabless[v + (i+1)*variables.size()]->q();
             } else {
               backwardConstraint->B_joint() = variabless[v + (i+1)*variables.size()];
@@ -421,7 +421,7 @@ namespace trajectory_optimizer{
             } else {
               backwardConstraint->A_link() = variabless[v + i*variables.size()];
             }
-            if (i==(path->size() -2)) {
+            if (i+2==path->size()) {
               backwardConstraint->B_localpos() = variabless[v + (i+1)*variables.size()]->T();
             } else {
               backwardConstraint->B_link() = variabless[v + (i+1)*variables.size()];
