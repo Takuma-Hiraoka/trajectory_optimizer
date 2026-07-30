@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(trajectory_optimizer_sample)
 
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++17)
 set(CMAKE_BUILD_TYPE Release)
 
 find_package(catkin REQUIRED COMPONENTS
